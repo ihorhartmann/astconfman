@@ -33,7 +33,7 @@ DEBUG = False
 # SQLALCHEMY_ECHO - prints SQL statements.
 SQLALCHEMY_ECHO = False
 
-# See http://docs.sqlalchemy.org/en/rel_1_0/core/engines.html#database-urls 
+# See http://docs.sqlalchemy.org/en/rel_1_0/core/engines.html#database-urls
 DATABASE_FILE = os.path.join(os.path.dirname(__file__), 'astconfman.db')
 SQLALCHEMY_DATABASE_URI = 'sqlite:///' + DATABASE_FILE
 
@@ -61,8 +61,9 @@ ASTERISK_SSH_KEY = 'ssh-rsa AAAAB3NzaC1yc2EA...' # Put your key in instance conf
 DISABLED_TABS = []
 
 # Callout template.
-CALLOUT_TEMPLATE = """Channel: Local/%(number)s@confman-dialout
-Context: confman-bridge
+CALLOUT_TEMPLATE = """Channel: SIP/%(number)s
+Callerid: %(number)s
+Context: ctx
 Extension: %(confnum)s
 Priority: 1
 MaxRetries: 0
