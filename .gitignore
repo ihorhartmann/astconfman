@@ -1,3 +1,7 @@
 *.pyc
 astconfman/astconfman.db
 astconfman/astconfman.log
+
+env/
+venv/
+.idea/
