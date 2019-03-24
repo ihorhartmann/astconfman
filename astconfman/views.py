@@ -308,9 +308,10 @@ class ConferenceAdmin(MyModelView, AuthBaseView):
         conf = Conference.query.get_or_404(conf_id)
         phone = request.args.get('phone', None)
         if phone and phone.isdigit():
-            originate(conf.number, phone,
-                bridge_options=conf.conference_profile.get_confbridge_options(),
-                user_options=conf.public_participant_profile.get_confbridge_options())
+            # originate(conf.number, phone,
+            #     bridge_options=conf.conference_profile.get_confbridge_options(),
+            #     user_options=conf.public_participant_profile.get_confbridge_options())
+            conf.invite_guest(phone)
             flash(gettext('Number %(phone)s is called for conference.',
                           phone=phone))
         time.sleep(1)

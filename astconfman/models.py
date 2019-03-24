@@ -9,8 +9,6 @@ from crontab import CronTab
 from app import app, db, sse_notify
 
 
-
-
 class Contact(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.Unicode(128), index=True)
@@ -41,29 +39,28 @@ class Conference(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     user = db.relationship('User', backref='conferences')
 
-
     def __str__(self):
         return '%s <%s>' % (self.name, self.number)
 
-
     def _online_participant_count(self):
         return asterisk.confbridge_get_user_count(self.number) or 0
-    online_participant_count = property(_online_participant_count)
 
+    online_participant_count = property(_online_participant_count)
 
     def _invited_participant_count(self):
         return Participant.query.filter_by(conference=self, is_invited=True).count()
+
     invited_participant_count = property(_invited_participant_count)
 
     def _participant_count(self):
         return len(self.participants)
-    participant_count = property(_participant_count)
 
+    participant_count = property(_participant_count)
 
     def _is_locked(self):
         return asterisk.confbridge_is_locked(self.number)
-    is_locked = property(_is_locked)
 
+    is_locked = property(_is_locked)
 
     def log(self, message):
         post = ConferenceLog(conference=self, message=message)
@@ -71,18 +68,23 @@ class Conference(db.Model):
         db.session.commit()
         sse_notify(self.id, 'log_message', message)
 
-
     def invite_participants(self):
         online_participants = [
             k['callerid'] for k in asterisk.confbridge_list_participants(
-                                                                self.number)]
+                self.number)]
         gen = (p for p in self.participants if p.is_invited and p.phone \
                not in online_participants)
         for p in gen:
-                asterisk.originate(self.number, p.phone, name=p.name,
-            bridge_options=self.conference_profile.get_confbridge_options(),
-            user_options=p.profile.get_confbridge_options()
-            )
+            asterisk.originate(self.number, p.phone, name=p.name,
+                               bridge_options=self.conference_profile.get_confbridge_options(),
+                               user_options=p.profile.get_confbridge_options()
+                               )
+
+    def invite_guest(self, phone):
+        asterisk.originate(self.number, phone,
+                           bridge_options=self.conference_profile.get_confbridge_options(),
+                           user_options=self.public_participant_profile.get_confbridge_options()
+                           )
 
 
 class ConferenceLog(db.Model):
@@ -104,8 +106,8 @@ class Participant(db.Model):
     conference_id = db.Column(db.Integer, db.ForeignKey('conference.id'))
     conference = db.relationship('Conference',
                                  backref=db.backref(
-                                     'participants',))
-                                     #cascade="delete,delete-orphan"))
+                                     'participants', ))
+    # cascade="delete,delete-orphan"))
     profile_id = db.Column(db.Integer, db.ForeignKey('participant_profile.id'))
     profile = db.relationship('ParticipantProfile')
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
@@ -243,12 +245,13 @@ class ConferenceSchedule(db.Model):
     entry = db.Column(db.String(256))
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     user = db.relationship('User', backref='schedules')
+
     # May be will refactor :-)
-    #minute = db.Column(db.String(64))
-    #hour = db.Column(db.String(64))
-    #day_of_month = db.Column(db.String(64))
-    #month = db.Column(db.String(64))
-    #day_of_week = db.Column(db.String(64))
+    # minute = db.Column(db.String(64))
+    # hour = db.Column(db.String(64))
+    # day_of_month = db.Column(db.String(64))
+    # month = db.Column(db.String(64))
+    # day_of_week = db.Column(db.String(64))
 
     def __str__(self):
         return self.entry
