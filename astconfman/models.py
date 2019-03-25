@@ -82,13 +82,12 @@ class Conference(db.Model):
     def invite_participants(self):
         logging.basicConfig(filename='astconfman.log', level=logging.DEBUG)
         logging.debug('INVITE ALL')
-        # online_participants = [
-        #     k['callerid'] for k in asterisk.confbridge_list_participants(
-        #         self.number)]
-        # gen = (p for p in self.participants if p.is_invited and p.phone \
-        #        not in online_participants)
-
-        for p in self._get_gen_for_offline_participants():
+        online_participants = [
+            k['callerid'] for k in asterisk.confbridge_list_participants(
+                self.number)]
+        gen = (p for p in self.participants if p.is_invited and p.phone \
+               not in online_participants)
+        for p in gen:
             self._invite_user(self.number, p.phone, name=p.name,
                               bridge_options=self.conference_profile.get_confbridge_options(),
                               user_options=p.profile.get_confbridge_options())
@@ -133,12 +132,12 @@ class Conference(db.Model):
         #                    user_options=self.public_participant_profile.get_confbridge_options()
         #                    )
 
-    def _get_gen_for_offline_participants(self):
-        online_participants = [
-            k['callerid'] for k in asterisk.confbridge_list_participants(
-                self.number)]
-        return (p for p in self.participants if p.is_invited and p.phone \
-                not in online_participants)
+    # def _get_gen_for_offline_participants(self):
+    #     online_participants = [
+    #         k['callerid'] for k in asterisk.confbridge_list_participants(
+    #             self.number)]
+    #     return (p for p in self.participants if p.is_invited and p.phone \
+    #             not in online_participants)
 
     def _invite_user(self, confnum, number, name='', bridge_options=[], user_options=[]):
         asterisk.originate(confnum, number, name=name,
@@ -161,20 +160,32 @@ class Conference(db.Model):
         if self._if_call_will_be_redirected(number):
             logging.debug("REDIRECT FOR " + number.__str__() + ' CONFERENCE ' + self.number)
             # TODO replace phone number getting the underlying number from database
-            if number == '6003':
-                number = '6005'
-                logging.debug(
-                    'REDIRECT FOR 6003 CONFERENCE ' + self.number + ' TO ' + number.__str__())
-                self._invite_user(confnum, number,
-                                  bridge_options=bridge_options,
-                                  user_options=user_options)
-            elif number == '6005':
-                number = '6004'
-                logging.debug(
-                    'REDIRECT FOR 6005 CONFERENCE ' + self.number + ' TO ' + number.__str__())
-                self._invite_user(confnum, number,
-                                  bridge_options=bridge_options,
-                                  user_options=user_options)
+            with app.app_context():
+                db.init_app(app)
+                contact = Contact.query.filter(Contact.phone == number).first()
+                # contact = Contact.query.get(1)
+                logging.debug('NEW LOGIC!!! Contact = ' + contact.__str__())
+                for subordinate in contact.subordinates:
+                    logging.debug(
+                        'REDIRECT FOR ' + confnum + ' CONFERENCE ' + self.number + ' TO ' + subordinate.phone)
+                    self._invite_user(confnum, subordinate.phone,
+                                      bridge_options=bridge_options,
+                                      user_options=user_options)
+
+            # if number == '6003':
+            #     number = '6005'
+            #     logging.debug(
+            #         'REDIRECT FOR 6003 CONFERENCE ' + self.number + ' TO ' + number.__str__())
+            #     self._invite_user(confnum, number,
+            #                       bridge_options=bridge_options,
+            #                       user_options=user_options)
+            # elif number == '6005':
+            #     number = '6004'
+            #     logging.debug(
+            #         'REDIRECT FOR 6005 CONFERENCE ' + self.number + ' TO ' + number.__str__())
+            #     self._invite_user(confnum, number,
+            #                       bridge_options=bridge_options,
+            #                       user_options=user_options)
         else:
             logging.debug("ANSWERED FOR " + number.__str__())
 
