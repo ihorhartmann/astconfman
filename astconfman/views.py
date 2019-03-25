@@ -1,19 +1,20 @@
 import json
+import logging
 import time
 from os.path import dirname, join
 from crontab import CronTab
 from flask import request, render_template, Response, redirect, url_for
 from flask import Blueprint, flash, abort, jsonify
-from flask.ext.admin import  Admin, AdminIndexView, BaseView, expose
-from flask.ext.admin.contrib.sqla.ajax import QueryAjaxModelLoader
+from flask_admin import  Admin, AdminIndexView, BaseView, expose
+from flask_admin.contrib.sqla.ajax import QueryAjaxModelLoader
 from flask_admin import helpers as admin_helpers
-from flask.ext.admin.actions import action
-from flask.ext.admin.contrib.sqla import ModelView, filters
-from flask.ext.admin.contrib.fileadmin import FileAdmin
-from flask.ext.admin.form import rules
-from flask.ext.babelex import lazy_gettext as _, gettext
-from flask.ext.security import current_user
-from flask.ext.security.utils import encrypt_password
+from flask_admin.actions import action
+from flask_admin.contrib.sqla import ModelView, filters
+from flask_admin.contrib.fileadmin import FileAdmin
+from flask_admin.form import rules
+from flask_babelex import lazy_gettext as _, gettext
+from flask_security import current_user
+from flask_security.utils import encrypt_password
 from jinja2 import Markup
 from wtforms.fields import PasswordField
 from wtforms.validators import Required, ValidationError
@@ -268,8 +269,7 @@ class ConferenceAdmin(MyModelView, AuthBaseView):
     @expose('/contacts/', methods=['POST'])
     def add_contacts(self):
         if request.method == 'POST':
-            if not request.form.get('conference') or not request.form.get(
-                'profile'):
+            if not request.form.get('conference') or not request.form.get('profile'):
                     flash(
                         'You must select Conference and Profile')
                     if current_user.has_role('admin'):
@@ -312,6 +312,8 @@ class ConferenceAdmin(MyModelView, AuthBaseView):
             #     bridge_options=conf.conference_profile.get_confbridge_options(),
             #     user_options=conf.public_participant_profile.get_confbridge_options())
             conf.invite_guest(phone)
+            logging.basicConfig(filename='astconfman.log', level=logging.DEBUG)
+            logging.debug('INVITE GUEST WEB')
             flash(gettext('Number %(phone)s is called for conference.',
                           phone=phone))
         time.sleep(1)
@@ -322,9 +324,11 @@ class ConferenceAdmin(MyModelView, AuthBaseView):
     def invite_participants(self, conf_id):
         conf = Conference.query.get_or_404(conf_id)
         conf.invite_participants()
+        logging.basicConfig(filename='astconfman.log', level=logging.DEBUG)
         flash(gettext(
-                'All the participants where invited to the conference'))
+                'All the participants were invited to the conference'))
         time.sleep(1)
+        logging.debug('INVITE PARTICIPANTS WEB')
         return redirect(url_for('.details_view', id=conf.id))
 
 
@@ -587,7 +591,7 @@ class ParticipantProfileAdmin(ModelView, AuthBaseView):
                 'startmuted',
                 'quiet',
                 'wait_marked',
-                'end_marked',            
+                'end_marked',
                 'music_on_hold_when_empty',
                 'music_on_hold_class',
             ),

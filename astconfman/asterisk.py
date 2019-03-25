@@ -2,7 +2,7 @@ import commands
 import os
 import shutil
 import tempfile
-from flask.ext.babelex import gettext
+from flask_babelex import gettext
 from transliterate import translit
 from app import app
 
@@ -182,3 +182,7 @@ def confbridge_record_start(confno):
 
 def confbridge_record_stop(confno):
     return _cli_command('confbridge record stop %s' % confno)
+
+
+def get_all_channels():
+    return _cli_command('core show channels')

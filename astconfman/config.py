@@ -1,6 +1,6 @@
 # *-* encoding: utf-8 *-*
 import os
-from flask.ext.babelex import lazy_gettext as _
+from flask_babelex import lazy_gettext as _
 
 # Default Language. Currenly only 'ru' and 'en' are supported.
 LANGUAGE = 'en'
@@ -60,6 +60,9 @@ ASTERISK_SSH_KEY = 'ssh-rsa AAAAB3NzaC1yc2EA...' # Put your key in instance conf
 # You can remove any tab by adding it here.
 DISABLED_TABS = []
 
+# Second before call will be redirected to another user
+SECONDS_BEFORE_REDIRECT = 30
+
 # Callout template.
 CALLOUT_TEMPLATE = """Channel: SIP/%(number)s
 Callerid: %(number)s
@@ -67,8 +70,8 @@ Context: ctx
 Extension: %(confnum)s
 Priority: 1
 MaxRetries: 0
-RetryTime: 15
-WaitTime: 300
+RetryTime: 30
+WaitTime: 30
 Set: participant_name=%(name)s
 Set: participant_number=%(number)s
 Set: conf_number=%(confnum)s
