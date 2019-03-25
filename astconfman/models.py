@@ -23,6 +23,9 @@ class Contact(db.Model):
     phone = db.Column(db.String(32))
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     user = db.relationship('User', backref='contacts')
+    superior_id = db.Column(db.Integer, db.ForeignKey(id), nullable=True)
+    superior = db.relationship('Contact', remote_side=id)
+    subordinates = db.relationship('Contact', remote_side=superior_id, uselist=True)
 
     def __unicode__(self):
         if self.name:

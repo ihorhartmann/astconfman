@@ -4,7 +4,7 @@ from flask import Flask
 from flask_babelex import gettext
 from flask_migrate import MigrateCommand
 from flask_security import utils
-from flask.ext.script import Manager
+from flask_script import Manager
 from app import app, db, migrate, user_datastore
 from models import Contact, Conference, Participant
 from models import ParticipantProfile, ConferenceProfile
