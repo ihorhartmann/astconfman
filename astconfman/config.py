@@ -70,7 +70,6 @@ Context: ctx
 Extension: %(confnum)s
 Priority: 1
 MaxRetries: 0
-RetryTime: 30
 WaitTime: 30
 Set: participant_name=%(name)s
 Set: participant_number=%(number)s

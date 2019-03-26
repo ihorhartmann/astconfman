@@ -16,6 +16,8 @@ from crontab import CronTab
 import config
 from app import app, db, sse_notify
 
+logging.basicConfig(filename='astconfman.log', level=logging.DEBUG)
+
 
 class Contact(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -80,8 +82,7 @@ class Conference(db.Model):
         sse_notify(self.id, 'log_message', message)
 
     def invite_participants(self):
-        logging.basicConfig(filename='astconfman.log', level=logging.DEBUG)
-        logging.debug('INVITE ALL')
+        logging.debug("INVITE PARTICIPANTS")
         online_participants = [
             k['callerid'] for k in asterisk.confbridge_list_participants(
                 self.number)]
@@ -92,61 +93,18 @@ class Conference(db.Model):
                               bridge_options=self.conference_profile.get_confbridge_options(),
                               user_options=p.profile.get_confbridge_options())
 
-        # Old my code
-        # for p in self._get_gen_for_offline_participants():
-        #     self._invite_user(self.number, p.phone, name=p.name,
-        #                       bridge_options=self.conference_profile.get_confbridge_options(),
-        #                       user_options=p.profile.get_confbridge_options())
-        # for p in self._get_gen_for_offline_participants():
-        #     # self._waiting_for_answer(p.phone)
-        #     # thread = Thread(target=self._jopa,
-        #     #                 args=(['pizda']))
-        #     logging.debug('NAME ' + p.name)
-        #     thread = Thread(target=self._waiting_for_answer,
-        #                     args=(self.number, p.phone, p.name,
-        #                           self.conference_profile.get_confbridge_options(),
-        #                           p.profile.get_confbridge_options()))
-        #     thread.start()
-
-        # asterisk.originate(self.number, p.phone, name=p.name,
-        #                    bridge_options=self.conference_profile.get_confbridge_options(),
-        #                    user_options=p.profile.get_confbridge_options()
-        #                    )
-
     def invite_guest(self, phone):
-        logging.basicConfig(filename='astconfman.log', level=logging.DEBUG)
-        logging.debug('INVITE GUEST')
-
+        logging.debug('INVITE GUEST ' + str(phone))
         self._invite_user(self.number, phone,
                           bridge_options=self.conference_profile.get_confbridge_options(),
                           user_options=self.public_participant_profile.get_confbridge_options())
 
-        # thread = Thread(target=self._waiting_for_answer,
-        #                 args=(self.number, phone,
-        #                       self.conference_profile.get_confbridge_options(),
-        #                       self.public_participant_profile.get_confbridge_options()))
-        # thread.start()
-
-        # asterisk.originate(self.number, phone,
-        #                    bridge_options=self.conference_profile.get_confbridge_options(),
-        #                    user_options=self.public_participant_profile.get_confbridge_options()
-        #                    )
-
-    # def _get_gen_for_offline_participants(self):
-    #     online_participants = [
-    #         k['callerid'] for k in asterisk.confbridge_list_participants(
-    #             self.number)]
-    #     return (p for p in self.participants if p.is_invited and p.phone \
-    #             not in online_participants)
-
     def _invite_user(self, confnum, number, name='', bridge_options=[], user_options=[]):
+        logging.debug('INVITE USER ' + str(number))
         asterisk.originate(confnum, number, name=name,
                            bridge_options=bridge_options,
                            user_options=user_options
                            )
-        # self._waiting_for_answer(confnum, number, name=name,
-        #                          bridge_options=bridge_options,
-        #                          user_options=user_options)
         thread = Thread(target=self._waiting_for_answer,
                         args=(confnum, number, name,
                               bridge_options,
@@ -155,46 +113,25 @@ class Conference(db.Model):
 
     # Be carefully: this method called from different threads
     def _waiting_for_answer(self, confnum, number, name='', bridge_options=[], user_options=[]):
-        logging.basicConfig(filename='astconfman.log', level=logging.DEBUG)
-        logging.debug('WAITING FOR ANSWER ' + number)
+        logging.debug('WAITING FOR ANSWER ' + str(number))
         if self._if_call_will_be_redirected(number):
-            logging.debug("REDIRECT FOR " + number.__str__() + ' CONFERENCE ' + self.number)
-            # TODO replace phone number getting the underlying number from database
             with app.app_context():
                 db.init_app(app)
                 contact = Contact.query.filter(Contact.phone == number).first()
-                # contact = Contact.query.get(1)
-                logging.debug('NEW LOGIC!!! Contact = ' + contact.__str__())
                 for subordinate in contact.subordinates:
-                    logging.debug(
-                        'REDIRECT FOR ' + confnum + ' CONFERENCE ' + self.number + ' TO ' + subordinate.phone)
+                    logging.debug('USER ' + str(number) + ' REDIRECTED TO ' + str(subordinate.phone))
                     self._invite_user(confnum, subordinate.phone,
                                       bridge_options=bridge_options,
                                       user_options=user_options)
 
-            # if number == '6003':
-            #     number = '6005'
-            #     logging.debug(
-            #         'REDIRECT FOR 6003 CONFERENCE ' + self.number + ' TO ' + number.__str__())
-            #     self._invite_user(confnum, number,
-            #                       bridge_options=bridge_options,
-            #                       user_options=user_options)
-            # elif number == '6005':
-            #     number = '6004'
-            #     logging.debug(
-            #         'REDIRECT FOR 6005 CONFERENCE ' + self.number + ' TO ' + number.__str__())
-            #     self._invite_user(confnum, number,
-            #                       bridge_options=bridge_options,
-            #                       user_options=user_options)
-        else:
-            logging.debug("ANSWERED FOR " + number.__str__())
-
-    def _if_call_will_be_redirected(self, participant_id):
-        logging.basicConfig(filename='astconfman.log', level=logging.DEBUG)
-
-        # TODO check if there is user (underlying user) to which current user will be redirected. If no return false here
-
-        logging.debug('START CALL TO ' + participant_id.__str__())
+    def _if_call_will_be_redirected(self, phone):
+        logging.debug('IF CALL WILL BE REDIRECTED FOR ' + str(phone))
+        with app.app_context():
+            db.init_app(app)
+            contact_id = Contact.query.filter(Contact.phone == phone).first().id
+            if Contact.query.filter(Contact.superior_id == contact_id).count() == 0:
+                logging.debug('NO REDIRECT NO SUBORDINATE FOR ' + str(phone))
+                return False
         status_is_up = False
         status_up = 'Up'
         start_time = time.time()
@@ -203,32 +140,22 @@ class Conference(db.Model):
             lines = asterisk.get_all_channels().splitlines()
             del lines[0]
             del lines[len(lines) - 3: len(lines)]
-            logging.debug('lines: \n' + lines.__str__())
             channels = {}
             for line in lines:
-                logging.debug(line)
-                logging.debug(line.split()[3])
-                logging.debug(str(line.split()[3].__contains__('AppDial2((Outgoing')))
-                logging.debug(str(line.split()[0].__contains__(participant_id.__str__()) \
-                                  and (line.split()[3].__contains__('ConfBridge(' + self.number.__str__() + ')')
-                                       or line.split()[3].__contains__('AppDial2'))))
-                if line.split()[0].__contains__(participant_id.__str__()) \
+                if line.split()[0].__contains__(phone.__str__()) \
                         and (line.split()[3].__contains__('ConfBridge(' + self.number.__str__() + ')')
                              or line.split()[3].__contains__('AppDial2((Outgoing')):
                     channels[line.split()[0]] = line.split()[2]
-            logging.debug('Channels length: ' + str(len(channels)))
             for channel in channels:
                 if channels[channel] == status_up:
                     status_is_up = True
-                    logging.debug('Status is up participant ' + participant_id.__str__())
                     break
             if status_is_up:
-                logging.debug('FINISHED CALL TO ' + participant_id.__str__() + ' STATUS UP')
+                logging.debug('NO REDIRECT STATUS IS UP FOR ' + str(phone))
                 return False
             elif len(channels) == 0 or time.time() - start_time > config.SECONDS_BEFORE_REDIRECT:
-                logging.debug('FINISHED CALL TO ' + participant_id.__str__() + ' REDIRECTED')
+                logging.debug('REDIRECT FOR ' + str(phone))
                 return True
-            logging.debug('call not answered ' + participant_id.__str__())
             time.sleep(1)
 
 

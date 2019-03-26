@@ -111,6 +111,9 @@ msgstr "Телефон"
 msgid "Name"
 msgstr "Имя"
 
+msgid "Superior"
+msgstr "Начальник"
+
 #: views.py:105 views.py:177
 msgid "User"
 msgstr "Пользователь"
