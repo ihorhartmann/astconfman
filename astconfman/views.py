@@ -93,8 +93,8 @@ def legend_formatter(view, context, model, name):
 
 
 class ContactAdmin(MyModelView, AuthBaseView):
-    column_list = ['phone', 'name', 'user']
-    form_columns = ['phone', 'name', 'user']
+    column_list = ['phone', 'name', 'superior', 'user']
+    form_columns = ['phone', 'name', 'superior', 'user']
     create_template = 'contact_create.html'
     column_searchable_list = ['phone', 'name']
     column_filters = ['user']
@@ -104,6 +104,7 @@ class ContactAdmin(MyModelView, AuthBaseView):
     column_labels = {
         'phone': _('Phone'),
         'name': _('Name'),
+        'superior': _('Superior'),
         'user': _('User')
     }
 
