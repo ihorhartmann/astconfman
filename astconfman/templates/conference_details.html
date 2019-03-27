@@ -1,5 +1,5 @@
 {% extends 'admin/model/details.html' %}
- 
+
 {% block head %}
 {{ super() }}
 
@@ -18,10 +18,10 @@
                  var btn = document.getElementById("participant-" + callerid);
                 //$("participant-" + msg.callerid).css('btn btn-primary dropdown-toggle');
                 btn.className = 'btn ' + cls + ' dropdown-toggle';
-            };            
+            };
 
             function blink1() {
-                btn_class('btn-default');                          
+                btn_class('btn-default');
                 setTimeout(blink2, 600);
             };
 
@@ -88,7 +88,7 @@
                         <span class="caret"></span>
                     {% if confbridge.locked %}  <span class='glyphicon glyphicon-lock'></span> {% endif %} </button>
                     <ul class="dropdown-menu" aria-labelledby="dropdownMenu">
-                        <li><a href="{{ url_for('.invite_participants', conf_id=model.id) }}"><span class='glyphicon glyphicon-phone-alt'></span> {{ _('Invite All Participants') }}</a></li>                                        
+                        <li><a href="{{ url_for('.invite_participants', conf_id=model.id) }}"><span class='glyphicon glyphicon-phone-alt'></span> {{ _('Invite All Participants') }}</a></li>
                         <li>
                             <form class="form" action="{{ url_for('.invite_guest', conf_id=model.id) }}" method="GET">
                                 <div class="form-group">
@@ -98,7 +98,7 @@
                                 <button type="submit" class="btn btn-default"><span class="glyphicon glyphicon-phone-alt"></span> {{ _('Invite') }}</button>
                                 </div>
                             </form>
-                        </li>                        
+                        </li>
                         <li><a href="{{ url_for('.mute', conf_id=model.id) }}"><span class="glyphicon glyphicon-volume-off"></span> {{ _('Mute All') }}</a></li>
                         <li><a href="{{ url_for('.unmute', conf_id=model.id) }}"><span class="glyphicon glyphicon-volume-up"></span> {{ _('Unmute All') }}</a></li>
                         <li><a href="{{ url_for('.record_start', conf_id=model.id) }}"><span class="glyphicon glyphicon-record"></span> {{ _('Start Recording') }}</a></li>
@@ -110,8 +110,8 @@
                         {% endif %}
                         <li><a href="{{ url_for('.kick', conf_id=model.id) }}"><span class='glyphicon glyphicon-off'></span> {{ _('Kick All') }}</a></li>
                     </ul>
-                </div>                
-            </div>            
+                </div>
+            </div>
 
         </div>
         <br/>
@@ -135,30 +135,30 @@
                         }
                         if (p.flags.indexOf('m') == -1) {
                             unmutedBtn = <li><a href={"{{url_for('.mute', conf_id=model.id, channel='')}}" + p.channel}><span className="glyphicon glyphicon-volume-off"></span> {{ _('Mute') }}</a></li>
-                        }                            
+                        }
                         if (p.flags.indexOf('A') != -1) {
                             adminSpan = <span className="glyphicon glyphicon-text-color"></span>
-                        }                       
+                        }
                         if (p.flags.indexOf('M') != -1) {
                             markedSpan = <span className="glyphicon glyphicon-king"></span>
-                        }                                               
+                        }
                         return (
                             <div className='btn-group'>
                                 <button id={'participant-' + p.callerid} className="btn btn-default dropdown-toggle" type="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
                                 {mutedSpan}
                                 {adminSpan}
                                 {markedSpan}
-                                {' ' + p.callerid + ' '} 
+                                {' ' + p.callerid + ' '}
                                 <span className="caret"></span>
                                 </button>
                                 <ul className="dropdown-menu" aria-labelledby="dropdownMenu1">
                                     <li><a href={"{{url_for('.kick', conf_id=model.id , channel='')}}"+p.channel}><span className="glyphicon glyphicon-remove"></span> {{ _('Kick') }} </a></li>
-                                    {mutedBtn} 
+                                    {mutedBtn}
                                     {unmutedBtn}
-                                </ul>                            
+                                </ul>
                             </div>
-                        ) 
-                    });                    
+                        )
+                    });
                     return (
                             <div className="row customNoMargin">
                                 {participantNodes}
@@ -168,7 +168,7 @@
             });
 
             var ParticipantBox = React.createClass({
-                
+
                 loadFromServer: function() {
                     $.ajax({
                       url: this.props.url,
@@ -190,9 +190,9 @@
                 componentDidMount: function() {
                     this.loadFromServer();
                     window.participantBox = this;
-                  },                
+                  },
 
-                render: function() {                    
+                render: function() {
                     return (
                         <div class="participants">
                             <ParticipantList ref="participantList"  data={this.state.data} />
@@ -214,8 +214,11 @@
         <div class='table-responsive'>
             <small><table id="logsTable" class="table">
                 {% for log in model.logs | sort(attribute='added', reverse=True) %}
-                    <tr style="padding:0;"><td style="white-space:nowrap; padding:0;" {% if log.added %} title="{{log.added.strftime('%Y-%m-%d %H:%M:%S')}}" {% endif %}>{{ log.message }}</td></tr>
-                {% endfor %} 
+                    <tr style="padding:0;">
+                        <td style="white-space:nowrap; padding: 0 10px 0 0;">{{log.added.strftime('%Y-%m-%d %H:%M:%S')}}</td>
+                        <td style="white-space:nowrap; padding:0;">{{ log.message }}</td>
+                    </tr>
+                {% endfor %}
             </table></small>
         </div>
     </div>

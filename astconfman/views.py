@@ -26,6 +26,7 @@ from forms import ContactImportForm, ConferenceForm
 from asterisk import *
 
 
+logging.basicConfig(filename='astconfman.log', level=logging.DEBUG)
 
 class AuthBaseView(BaseView):
     def is_accessible(self):
@@ -312,9 +313,8 @@ class ConferenceAdmin(MyModelView, AuthBaseView):
             # originate(conf.number, phone,
             #     bridge_options=conf.conference_profile.get_confbridge_options(),
             #     user_options=conf.public_participant_profile.get_confbridge_options())
+            conf.log('User '+ phone + ' was invited to the conference')
             conf.invite_guest(phone)
-            logging.basicConfig(filename='astconfman.log', level=logging.DEBUG)
-            logging.debug('INVITE GUEST WEB')
             flash(gettext('Number %(phone)s is called for conference.',
                           phone=phone))
         time.sleep(1)
@@ -324,12 +324,11 @@ class ConferenceAdmin(MyModelView, AuthBaseView):
     @expose('/<int:conf_id>/invite_participants')
     def invite_participants(self, conf_id):
         conf = Conference.query.get_or_404(conf_id)
+        conf.log('All the participants were invited to the conference')
         conf.invite_participants()
-        logging.basicConfig(filename='astconfman.log', level=logging.DEBUG)
         flash(gettext(
                 'All the participants were invited to the conference'))
         time.sleep(1)
-        logging.debug('INVITE PARTICIPANTS WEB')
         return redirect(url_for('.details_view', id=conf.id))
 
 
@@ -864,11 +863,14 @@ for v in admin_views.keys():
 asterisk = Blueprint('asterisk', __name__)
 
 def asterisk_is_authenticated():
+    logging.debug('asterisk_is_authenticated')
+    logging.debug(str(request.remote_addr == app.config['ASTERISK_IPADDR']))
     return request.remote_addr == app.config['ASTERISK_IPADDR']
 
 
 @asterisk.route('/invite_all/<int:conf_number>/<callerid>')
 def invite_all(conf_number, callerid):
+    logging.debug('INVITE ALL LOGS')
     if not asterisk_is_authenticated():
         return 'NOTAUTH'
     conf = Conference.query.filter_by(number=conf_number).first()

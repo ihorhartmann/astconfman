@@ -111,27 +111,28 @@ class Conference(db.Model):
                               user_options))
         thread.start()
 
-    # Be carefully: this method called from different threads
+    # Be careful: this method called from different threads
     def _waiting_for_answer(self, confnum, number, name='', bridge_options=[], user_options=[]):
         logging.debug('WAITING FOR ANSWER ' + str(number))
-        if self._if_call_will_be_redirected(number):
-            with app.app_context():
-                db.init_app(app)
+        with app.app_context():
+            db.init_app(app)
+            conf = Conference.query.get(self.id)
+            conf.log('Calling to user ' + str(number))
+            if self._if_call_will_be_redirected(number, conf):
                 contact = Contact.query.filter(Contact.phone == number).first()
                 for subordinate in contact.subordinates:
                     logging.debug('USER ' + str(number) + ' REDIRECTED TO ' + str(subordinate.phone))
+                    conf.log('User ' + str(number) + ' was redirected to ' + str(subordinate.phone))
                     self._invite_user(confnum, subordinate.phone,
                                       bridge_options=bridge_options,
                                       user_options=user_options)
 
-    def _if_call_will_be_redirected(self, phone):
+    def _if_call_will_be_redirected(self, phone, conf):
         logging.debug('IF CALL WILL BE REDIRECTED FOR ' + str(phone))
-        with app.app_context():
-            db.init_app(app)
-            contact_id = Contact.query.filter(Contact.phone == phone).first().id
-            if Contact.query.filter(Contact.superior_id == contact_id).count() == 0:
-                logging.debug('NO REDIRECT NO SUBORDINATE FOR ' + str(phone))
-                return False
+        contact_id = Contact.query.filter(Contact.phone == phone).first().id
+        if Contact.query.filter(Contact.superior_id == contact_id).count() == 0:
+            logging.debug('NO REDIRECT NO SUBORDINATE FOR ' + str(phone))
+            return False
         status_is_up = False
         status_up = 'Up'
         start_time = time.time()
@@ -152,9 +153,11 @@ class Conference(db.Model):
                     break
             if status_is_up:
                 logging.debug('NO REDIRECT STATUS IS UP FOR ' + str(phone))
+                conf.log('User ' + str(phone) + ' has joined to the conference')
                 return False
             elif len(channels) == 0 or time.time() - start_time > config.SECONDS_BEFORE_REDIRECT:
                 logging.debug('REDIRECT FOR ' + str(phone))
+                conf.log('User ' + str(phone) + ' has not answered call')
                 return True
             time.sleep(1)
 
